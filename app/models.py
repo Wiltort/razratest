@@ -65,11 +65,13 @@ class Task(db.Model):
             'created_at': self.created_at.isoformat() + 'Z',
             'updated_at': self.updated_at.isoformat() + 'Z'
         }
+        return data
     
-    def from_dict(self, data):
+    def from_dict(self, data, owner_user):
         for field in ['title', 'description']:
             if field in data:
                 setattr(self, field, data[field])
+            setattr(self, 'owner', owner_user)
         
 
 
