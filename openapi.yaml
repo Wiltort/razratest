@@ -1,0 +1,280 @@
+openapi: 3.0.3
+info:
+  title: Razratest API
+  version: ''
+  description: >-
+    Небольшое веб-приложение на Flask, которое предоставляет RESTful API для
+    управления списком задач (TODO list). Пользователи могут составлять личные списки задач; редактировать, удалять и смотреть свои задачи.
+    Гитхаб:
+    - [github.com/Wiltort/razratest](https://github.com/Wiltort/razratest)
+  contact:
+    email: wiltort21@gmail.com
+servers:
+  - url: /
+tags:
+  - name: tasks
+    description: Доступ к задачам
+  - name: auth
+    description: Авторизация
+    externalDocs:
+      description: Документация по расширению Flask-HTTPAuth
+      url: https://flask-httpauth.readthedocs.io/en/latest/
+paths:
+  /tasks:
+    summary: Доступ к задачам
+    post:
+      summary: Добавление новой задачи
+      description: Требуется авторизация
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreate'
+      responses:
+        201:
+          description: 'Новый отзыв'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        400:
+          description: Ошибка
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        401:
+          description: Необходима авторизация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - token_auth:
+        - write:user
+      tags:
+        - tasks
+    get:
+      tags:
+        - tasks
+      summary: Список задач
+      description:
+        Получить список всех задач пользователя. Необходима авторизация.
+      responses:
+        200:
+          description: Список задач
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Task'
+        401:
+          description: Необходима авторизация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+      - token_auth:
+        - write:user
+  /tasks/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        description: ID задачи
+        schema:
+          type: number
+    get:
+      tags:
+        - tasks
+      summary: Получение задачи
+      description: |
+        Получить задачу с id. Необходима авторизация. Доступ только для автора задачи
+      responses:
+        200:
+          description: Получение задачи
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        404:
+          description: Задача не найдена
+        403:
+          description: Нет прав доступа
+      security:
+      - token_auth:
+        - read:user
+    put:
+      summary: Редактирование задачи
+      description: |
+        Редактировать задачу с id. Необходима авторизация. Доступ только для автора задачи
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskEdit'
+      responses:
+        201:
+          description: 'Задача отредактирована'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        415:
+          description: Данные не прошли проверку
+        403:
+          description: Нет прав доступа
+        401:
+          description: Необходима авторизация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Задача не найдена
+      security:
+      - token_auth:
+        - write:user
+      tags:
+        - tasks
+    delete:
+      tags:
+        - tasks
+      summary: Удаление задачи
+      description: |
+        Удалить отзыв по id. Необходима авторизация. Доступ только для автора задачи
+      responses:
+        200:
+          description: Задача удалена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskDeleted'
+        403:
+          description: Нет прав доступа
+        401:
+          description: Необходима авторизация
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        404:
+          description: Задача не найдена
+      security:
+      - token_auth:
+        - write:user
+  /tokens:
+    post:
+      tags:
+        - auth
+      description: Получение токена в обмен на username и password.
+      requestBody:
+        content:
+          application/json:
+            schema:
+              required:
+                - username
+                - password
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+                  writeOnly: true
+      responses:
+        200:
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Token'
+          description: ''
+        401:
+          description: Неверный пароль (или логин уже занят)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    Task:
+      title: Задача
+      type: object
+      properties:
+        id:
+          type: integer
+          title: id задачи
+          readOnly: True
+          example: 7
+        title:
+          type: string
+          example: task1
+          title: Заголовок задачи
+        description:
+          type: string
+          example: описание
+          title: Описание задачи
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    TaskCreate:
+      title: Создание задачи
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          example: task1
+          title: Заголовок задачи
+        description:
+          type: string
+          example: описание
+          title: Описание задачи
+    TaskEdit:
+      title: Изменение задачи
+      type: object
+      properties:
+        title:
+          type: string
+          example: task1
+          title: Заголовок задачи
+        description:
+          type: string
+          example: описание
+          title: Описание задачи
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+    TaskDeleted:
+      type: object
+      properties:
+        result:
+          type: string
+          example: the task <Task sss> deleted 
+    Token:
+      title: Токен
+      type: object
+      properties:
+        token:
+          type: string
+          title: access токен
+          example: y8rQipEMBR5m6u5cvUYL8/3LW70gBbRM
+  requestBodies:
+    Task:
+      description: Task
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/TaskCreate'
+  securitySchemes:
+    token_auth:
+      type: apiKey
+      name: Bearer
+      in: header

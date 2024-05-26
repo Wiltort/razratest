@@ -14,6 +14,7 @@ def verify_password(username, password):
     if user is None:
         if not username or not password:
             return False
+        #если логин и пароль новые создаем нового юзера
         new_user = User(username=username)
         new_user.set_password(password=password)
         db.session.add(new_user)
